@@ -1,7 +1,12 @@
-import { Arg, Mutation, Query, Resolver } from 'type-graphql';
-import { hash } from 'bcryptjs';
+import { Arg, Field, Mutation, ObjectType, Query, Resolver } from 'type-graphql';
+import { compare, hash } from 'bcryptjs';
 import { User } from './entity/User';
 
+@ObjectType()
+class LoginResponse {
+  @Field()
+  accessToken: string;
+}
 @Resolver()
 export class UserResolvers {
   @Query(() => String)
@@ -9,17 +14,52 @@ export class UserResolvers {
     return 'hi';
   }
 
-  @Mutation()
+  @Query(() => [User])
+  users() {
+    return User.find();
+  }
+
+  @Mutation(() => Boolean)
   async register(
     @Arg('email', () => String) email: string,
     @Arg('password', () => String) password: string,
   ) {
 
-    const hashedPassword = await hash(password, 12);
-    await User.insert({
-      email,
-      password: hashedPassword,
-    })
-    return 
+    try {
+      const hashedPassword = await hash(password, 12);
+      await User.insert({
+        email,
+        password: hashedPassword,
+      })
+      return true;
+    } catch(err) {
+      console.log('error', err);
+      return false;
+    }
+  }
+
+  @Mutation(() => LoginResponse)
+  async login(
+    @Arg('email', () => String) email: string,
+    @Arg('password', () => String) password: string,
+  ): Promise<LoginResponse> {
+
+    const user = await User.findOne({where: { email }});
+
+    if (!user) {
+      throw new Error('could not find user');
+    }
+
+    const isValid = compare(password, user.password);
+
+    if (!isValid) {
+      throw new Error('bad password');
+    }
+
+    // login successful
+
+    return {
+      accessToken: '',
+    };
   }
 }
