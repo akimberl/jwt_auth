@@ -1,11 +1,12 @@
-import "reflect-metadata";
 import 'reflect-metadata';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
-import { buildSchema } from "type-graphql";
-import { UserResolvers } from "./UserResolver";
-import { createConnection } from "typeorm";
+import { buildSchema } from 'type-graphql';
+import { createConnection } from 'typeorm';
 
+import { UserResolvers } from './UserResolver';
+
+require('dotenv').config();
 (async () => {
   const app = express();
   app.get('/', (_req, res) => {
@@ -13,18 +14,18 @@ import { createConnection } from "typeorm";
   });
 
   await createConnection();
-  
-  app.listen(4000, () => console.log('express server started'));
+
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => console.log(`express server started at port: ${port}`));
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [UserResolvers]
-    })
+      resolvers: [UserResolvers],
+    }),
   });
 
   apolloServer.applyMiddleware({ app });
-    
-})()
+})();
 
 // createConnection().then(async connection => {
 
